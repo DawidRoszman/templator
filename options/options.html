@@ -12,6 +12,9 @@
         <p>Create and manage templates with friendly forms. Use {{field_id}} placeholders in subject/body.</p>
       </div>
       <div class="header-actions">
+        <button id="exportTemplates" type="button" class="ghost">Export</button>
+        <button id="importTemplates" type="button" class="ghost">Import</button>
+        <input id="importFile" type="file" accept=".json,application/json" hidden />
         <button id="saveAll" type="button">Save templates</button>
         <span id="status" role="status"></span>
       </div>

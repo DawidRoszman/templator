@@ -26,6 +26,9 @@ const jsonPreview = document.getElementById("jsonPreview");
 const jsonEditor = document.getElementById("jsonEditor");
 const applyJsonButton = document.getElementById("applyJson");
 const copyJsonButton = document.getElementById("copyJson");
+const exportTemplatesButton = document.getElementById("exportTemplates");
+const importTemplatesButton = document.getElementById("importTemplates");
+const importFileInput = document.getElementById("importFile");
 
 const CONTACT_PLACEHOLDER_KEYS = new Set([
   "contact.firstName",
@@ -112,6 +115,16 @@ function refreshMonthPresetPreview(previewSelect, field) {
     opt.textContent = label;
     previewSelect.appendChild(opt);
   });
+}
+
+function templatesArrayFromImportPayload(parsed) {
+  if (Array.isArray(parsed)) {
+    return parsed;
+  }
+  if (parsed && typeof parsed === "object" && Array.isArray(parsed.templates)) {
+    return parsed.templates;
+  }
+  throw new Error("Import file must contain a JSON array or an object with a templates array.");
 }
 
 function normalizeTemplates(data) {
@@ -877,21 +890,67 @@ function updateToolbarState() {
   });
 }
 
+function applyTemplatesFromParsedData(dataArray, successMessage) {
+  const normalized = normalizeTemplates(deepClone(dataArray));
+  templates = normalized;
+  currentIndex = templates.length > 0 ? 0 : -1;
+  draft = currentIndex >= 0 ? deepClone(templates[currentIndex]) : null;
+  draftDirty = false;
+  renderTemplateList();
+  renderEditor();
+  updateJsonPanel();
+  setStatus(successMessage || "JSON applied. Click Save to persist your changes.");
+}
+
 function applyJson() {
   try {
     const parsed = JSON.parse(jsonEditor.value);
-    const normalized = normalizeTemplates(parsed);
-    templates = normalized;
-    currentIndex = templates.length > 0 ? 0 : -1;
-    draft = currentIndex >= 0 ? deepClone(templates[currentIndex]) : null;
-    draftDirty = false;
-    renderTemplateList();
-    renderEditor();
-    updateJsonPanel();
-    setStatus("JSON applied. Click Save to persist your changes.");
+    if (!Array.isArray(parsed)) {
+      throw new Error("Templates must be a JSON array.");
+    }
+    applyTemplatesFromParsedData(parsed);
   } catch (error) {
     console.error(error);
     setStatus(error.message || "Failed to apply JSON.", true);
+  }
+}
+
+function exportTemplatesToFile() {
+  const payload = { version: 1, templates: getWorkingTemplates() };
+  const json = JSON.stringify(payload, null, 2);
+  const blob = new Blob([json], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  const dateStamp = new Date().toISOString().slice(0, 10);
+  anchor.href = url;
+  anchor.download = `mail-templates-${dateStamp}.json`;
+  anchor.click();
+  URL.revokeObjectURL(url);
+  setStatus("Templates exported.");
+}
+
+async function handleImportFileChange(event) {
+  const file = event.target.files?.[0];
+  event.target.value = "";
+  if (!file) {
+    return;
+  }
+  try {
+    const text = await file.text();
+    const parsed = JSON.parse(text);
+    const rawArray = templatesArrayFromImportPayload(parsed);
+    const currentCount = getWorkingTemplates().length;
+    const importCount = rawArray.length;
+    const shouldReplace = window.confirm(
+      `Replace all ${currentCount} current template(s) with ${importCount} imported template(s)?`
+    );
+    if (!shouldReplace) {
+      return;
+    }
+    applyTemplatesFromParsedData(rawArray, "Templates imported. Click Save to persist your changes.");
+  } catch (error) {
+    console.error(error);
+    setStatus(error.message || "Failed to import templates.", true);
   }
 }
 
@@ -986,6 +1045,9 @@ toolbar.addEventListener("click", handleToolbarClick);
 
 applyJsonButton.addEventListener("click", applyJson);
 copyJsonButton.addEventListener("click", copyJson);
+exportTemplatesButton.addEventListener("click", exportTemplatesToFile);
+importTemplatesButton.addEventListener("click", () => importFileInput.click());
+importFileInput.addEventListener("change", handleImportFileChange);
 
 loadTemplates().catch((error) => {
   console.error(error);
