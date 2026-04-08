@@ -238,10 +238,10 @@ function renderFields(current) {
     });
 
     const typeSelect = document.createElement("select");
-    ["text", "select"].forEach((type) => {
+    ["text", "select", "calculateSalary"].forEach((type) => {
       const option = document.createElement("option");
       option.value = type;
-      option.textContent = type;
+      option.textContent = type === "calculateSalary" ? "Calculate salary" : type;
       typeSelect.appendChild(option);
     });
     typeSelect.value = field.type || "text";
@@ -251,6 +251,17 @@ function renderFields(current) {
       if (field.type !== "select") {
         delete field.options;
         delete field.optionsDynamic;
+      }
+      if (field.type === "calculateSalary") {
+        if (field.timeFieldId === undefined) {
+          field.timeFieldId = "";
+        }
+        if (field.rateFieldId === undefined) {
+          field.rateFieldId = "";
+        }
+      } else {
+        delete field.timeFieldId;
+        delete field.rateFieldId;
       }
       markDirty();
       renderFields(current);
@@ -338,6 +349,45 @@ function renderFields(current) {
         advancedWrapper.classList.add("full-width");
         row.appendChild(advancedWrapper);
       }
+    }
+
+    if (field.type === "calculateSalary") {
+      const otherFields = fields.filter((f, fieldIndex) => fieldIndex !== index && f.id);
+      const timeSelect = document.createElement("select");
+      const placeholderTime = document.createElement("option");
+      placeholderTime.value = "";
+      placeholderTime.textContent = "Select field...";
+      timeSelect.appendChild(placeholderTime);
+      otherFields.forEach((f) => {
+        const option = document.createElement("option");
+        option.value = f.id;
+        option.textContent = f.label ? `${f.label} (${f.id})` : f.id;
+        timeSelect.appendChild(option);
+      });
+      timeSelect.value = field.timeFieldId || "";
+      timeSelect.addEventListener("change", (event) => {
+        field.timeFieldId = event.target.value;
+        markDirty();
+      });
+      row.appendChild(wrapField("Time field (hh:mm)", timeSelect));
+
+      const rateSelect = document.createElement("select");
+      const placeholderRate = document.createElement("option");
+      placeholderRate.value = "";
+      placeholderRate.textContent = "Select field...";
+      rateSelect.appendChild(placeholderRate);
+      otherFields.forEach((f) => {
+        const option = document.createElement("option");
+        option.value = f.id;
+        option.textContent = f.label ? `${f.label} (${f.id})` : f.id;
+        rateSelect.appendChild(option);
+      });
+      rateSelect.value = field.rateFieldId || "";
+      rateSelect.addEventListener("change", (event) => {
+        field.rateFieldId = event.target.value;
+        markDirty();
+      });
+      row.appendChild(wrapField("Rate field (per hour)", rateSelect));
     }
 
     const actions = document.createElement("div");
@@ -468,6 +518,21 @@ function updateWarnings() {
     }
     if (field.type === "select" && !field.optionsDynamic && (!Array.isArray(field.options) || field.options.length === 0)) {
       warnings.push(`Select field ${field.label || field.id || "(unnamed)"} has no options.`);
+    }
+    if (field.type === "calculateSalary") {
+      const label = field.label || field.id || "(unnamed)";
+      if (!field.timeFieldId || !field.rateFieldId) {
+        warnings.push(`Calculate salary field ${label} needs both time and rate fields.`);
+      }
+      if (field.timeFieldId && !unique.has(field.timeFieldId)) {
+        warnings.push(`Calculate salary field ${label} references unknown time field: ${field.timeFieldId}.`);
+      }
+      if (field.rateFieldId && !unique.has(field.rateFieldId)) {
+        warnings.push(`Calculate salary field ${label} references unknown rate field: ${field.rateFieldId}.`);
+      }
+      if (field.id && (field.timeFieldId === field.id || field.rateFieldId === field.id)) {
+        warnings.push(`Calculate salary field ${label} cannot reference itself.`);
+      }
     }
   });
 
