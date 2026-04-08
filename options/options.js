@@ -41,6 +41,68 @@ function deepClone(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
+function hasMonthRangeInOptionsDynamic(od) {
+  if (!od || typeof od !== "object") {
+    return false;
+  }
+  return Number.isFinite(od.monthsBefore) || Number.isFinite(od.monthsAfter);
+}
+
+function getSelectDynamicMode(field) {
+  const od = field.optionsDynamic;
+  if (!od) {
+    return "";
+  }
+  if (od === "months") {
+    return "months";
+  }
+  if (typeof od === "object" && od.type === "months") {
+    return hasMonthRangeInOptionsDynamic(od) ? "months" : "advanced";
+  }
+  return "advanced";
+}
+
+function getMonthPresetValues(field) {
+  const od = field.optionsDynamic;
+  if (od === "months") {
+    return { monthsBefore: 1, monthsAfter: 0, format: "monthYear", locale: "" };
+  }
+  if (od && typeof od === "object" && od.type === "months" && hasMonthRangeInOptionsDynamic(od)) {
+    return {
+      monthsBefore: Number.isFinite(od.monthsBefore) ? od.monthsBefore : 0,
+      monthsAfter: Number.isFinite(od.monthsAfter) ? od.monthsAfter : 0,
+      format: od.format || "monthYear",
+      locale: od.locale ? String(od.locale) : "",
+    };
+  }
+  return { monthsBefore: 1, monthsAfter: 0, format: "monthYear", locale: "" };
+}
+
+function applyMonthPresetToField(field, preset) {
+  const next = {
+    type: "months",
+    monthsBefore: Math.max(0, Math.floor(Number(preset.monthsBefore) || 0)),
+    monthsAfter: Math.max(0, Math.floor(Number(preset.monthsAfter) || 0)),
+    format: preset.format || "monthYear",
+  };
+  const localeTrimmed = (preset.locale || "").trim();
+  if (localeTrimmed) {
+    next.locale = localeTrimmed;
+  }
+  field.optionsDynamic = next;
+}
+
+function refreshMonthPresetPreview(previewSelect, field) {
+  const built = window.MonthDynamicOptions.buildDynamicMonthOptions(field.optionsDynamic);
+  previewSelect.innerHTML = "";
+  built.forEach((label) => {
+    const opt = document.createElement("option");
+    opt.value = label;
+    opt.textContent = label;
+    previewSelect.appendChild(opt);
+  });
+}
+
 function normalizeTemplates(data) {
   if (!Array.isArray(data)) {
     throw new Error("Templates must be a JSON array.");
@@ -306,10 +368,7 @@ function renderFields(current) {
         dynamicSelect.appendChild(option);
       });
 
-      let dynamicMode = "";
-      if (field.optionsDynamic) {
-        dynamicMode = field.optionsDynamic === "months" ? "months" : "advanced";
-      }
+      const dynamicMode = getSelectDynamicMode(field);
       dynamicSelect.value = dynamicMode;
 
       const dynamicWrapper = wrapField("Dynamic options", dynamicSelect);
@@ -319,9 +378,17 @@ function renderFields(current) {
         if (!value) {
           delete field.optionsDynamic;
         } else if (value === "months") {
-          field.optionsDynamic = "months";
+          applyMonthPresetToField(field, {
+            monthsBefore: 1,
+            monthsAfter: 0,
+            format: "monthYear",
+            locale: "",
+          });
         } else if (value === "advanced") {
-          field.optionsDynamic = field.optionsDynamic && field.optionsDynamic !== "months" ? field.optionsDynamic : {};
+          field.optionsDynamic =
+            field.optionsDynamic && typeof field.optionsDynamic === "object"
+              ? field.optionsDynamic
+              : {};
         }
         markDirty();
         renderFields(current);
@@ -329,6 +396,86 @@ function renderFields(current) {
 
       row.appendChild(wrapField("Options", optionsInput));
       row.appendChild(dynamicWrapper);
+
+      if (dynamicSelect.value === "months") {
+        const preset = getMonthPresetValues(field);
+
+        const monthsBeforeInput = document.createElement("input");
+        monthsBeforeInput.type = "number";
+        monthsBeforeInput.min = "0";
+        monthsBeforeInput.step = "1";
+        monthsBeforeInput.value = String(preset.monthsBefore);
+        const monthsBeforeWrapper = wrapField("Months before", monthsBeforeInput);
+
+        const monthsAfterInput = document.createElement("input");
+        monthsAfterInput.type = "number";
+        monthsAfterInput.min = "0";
+        monthsAfterInput.step = "1";
+        monthsAfterInput.value = String(preset.monthsAfter);
+        const monthsAfterWrapper = wrapField("Months after", monthsAfterInput);
+
+        const formatSelect = document.createElement("select");
+        [
+          { value: "monthYear", label: "Month and year" },
+          { value: "month", label: "Month only" },
+          { value: "shortMonth", label: "Short month" },
+          { value: "shortMonthYear", label: "Short month and year" },
+        ].forEach((optionConfig) => {
+          const option = document.createElement("option");
+          option.value = optionConfig.value;
+          option.textContent = optionConfig.label;
+          formatSelect.appendChild(option);
+        });
+        formatSelect.value = preset.format;
+        const formatWrapper = wrapField("Month format", formatSelect);
+
+        const localeInput = document.createElement("input");
+        localeInput.type = "text";
+        localeInput.placeholder = "e.g. pl-PL (optional)";
+        localeInput.value = preset.locale;
+        const localeWrapper = wrapField("Locale", localeInput);
+
+        const previewSelect = document.createElement("select");
+        previewSelect.disabled = true;
+        previewSelect.setAttribute("aria-label", "Preview of month options");
+        const previewWrapper = wrapField("Preview", previewSelect);
+        previewWrapper.classList.add("full-width");
+
+        const pushPresetFromInputs = () => {
+          applyMonthPresetToField(field, {
+            monthsBefore: monthsBeforeInput.value,
+            monthsAfter: monthsAfterInput.value,
+            format: formatSelect.value,
+            locale: localeInput.value,
+          });
+          refreshMonthPresetPreview(previewSelect, field);
+        };
+
+        monthsBeforeInput.addEventListener("input", () => {
+          pushPresetFromInputs();
+          markDirty();
+        });
+        monthsAfterInput.addEventListener("input", () => {
+          pushPresetFromInputs();
+          markDirty();
+        });
+        formatSelect.addEventListener("change", () => {
+          pushPresetFromInputs();
+          markDirty();
+        });
+        localeInput.addEventListener("input", () => {
+          pushPresetFromInputs();
+          markDirty();
+        });
+
+        refreshMonthPresetPreview(previewSelect, field);
+
+        row.appendChild(monthsBeforeWrapper);
+        row.appendChild(monthsAfterWrapper);
+        row.appendChild(formatWrapper);
+        row.appendChild(localeWrapper);
+        row.appendChild(previewWrapper);
+      }
 
       if (dynamicSelect.value === "advanced") {
         const advancedInput = document.createElement("textarea");

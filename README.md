@@ -27,7 +27,8 @@ Example field definition:
 ```
 
 ### Dynamic select options (months)
-You can generate month options automatically:
+You can generate month options automatically. The shorthand `"months"` selects the previous month and the current month (same as a range of one month before and none after):
+
 ```json
 {
   "id": "report_month",
@@ -37,7 +38,25 @@ You can generate month options automatically:
 }
 ```
 
-Advanced:
+**Range preset** (recommended): include a sliding window of calendar months before and after the current month. Options are listed in chronological order (oldest first). In Preferences you can set months before/after, format, locale, and see a live preview.
+
+```json
+{
+  "id": "report_month",
+  "label": "Report month",
+  "type": "select",
+  "optionsDynamic": {
+    "type": "months",
+    "monthsBefore": 2,
+    "monthsAfter": 1,
+    "format": "monthYear",
+    "locale": "pl-PL"
+  }
+}
+```
+
+**Advanced** (legacy `count` / `startOffset` / `step`):
+
 ```json
 {
   "id": "report_month",
