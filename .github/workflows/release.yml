@@ -1,0 +1,48 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+      - "v*.*"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Test
+        run: npm test
+
+      - name: Build XPI
+        run: npm run build
+
+      - name: Verify tag matches manifest version
+        run: node scripts/verify-release-tag.mjs
+
+      - name: Generate updates.json for self-hosted updates
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: node scripts/generate-updates-json.mjs
+
+      - name: Release metadata
+        id: meta
+        run: |
+          VERSION=$(node -p "JSON.parse(require('fs').readFileSync('manifest.json','utf8')).version")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/mail-templates.xpi
+            dist/mail-templates-${{ steps.meta.outputs.version }}.xpi
+            dist/updates.json
+          generate_release_notes: true
