@@ -27,6 +27,17 @@ const jsonEditor = document.getElementById("jsonEditor");
 const applyJsonButton = document.getElementById("applyJson");
 const copyJsonButton = document.getElementById("copyJson");
 
+const CONTACT_PLACEHOLDER_KEYS = new Set([
+  "contact.firstName",
+  "contact.lastName",
+  "contact.displayName",
+  "contact.email",
+  "contact_first_name",
+  "contact_last_name",
+  "contact_display_name",
+  "contact_email",
+]);
+
 let templates = [];
 let currentIndex = -1;
 let draft = null;
@@ -261,7 +272,7 @@ function renderEditor() {
     templateSubjectInput.value = "";
     bodyEditor.innerHTML = "";
     fieldsContainer.innerHTML = "";
-    bodyPreview.innerHTML = "";
+    bodyPreview.textContent = "";
     warningsList.innerHTML = "";
     updateInsertOptions([]);
     updateJsonPanel();
@@ -271,7 +282,7 @@ function renderEditor() {
   templateIdInput.value = current.id || "";
   templateNameInput.value = current.name || "";
   templateSubjectInput.value = current.subject || "";
-  bodyEditor.innerHTML = current.body || "";
+  bodyEditor.innerHTML = window.HTMLSanitize.sanitizeHtmlForEditor(current.body || "");
   renderFields(current);
   updateInsertOptions(current.fields || []);
   updatePreview();
@@ -629,7 +640,7 @@ function insertPlaceholderIntoEditor(text) {
 }
 
 function updatePreview() {
-  bodyPreview.innerHTML = draft?.body || "";
+  bodyPreview.textContent = window.HTMLSanitize.htmlToPlainText(draft?.body || "");
 }
 
 function markDirty() {
@@ -645,12 +656,19 @@ function markDirty() {
 
 function collectPlaceholders(text) {
   const matches = new Set();
-  const pattern = /{{\s*([\w-]+)\s*}}/g;
+  const pattern = /{{\s*([^}]+?)\s*}}/g;
   let match;
   while ((match = pattern.exec(text || ""))) {
-    matches.add(match[1]);
+    const name = String(match[1]).trim();
+    if (name) {
+      matches.add(name);
+    }
   }
   return matches;
+}
+
+function isContactPlaceholder(name) {
+  return CONTACT_PLACEHOLDER_KEYS.has(name);
 }
 
 function updateWarnings() {
@@ -709,7 +727,7 @@ function updateWarnings() {
   ]);
 
   placeholderSet.forEach((placeholder) => {
-    if (!unique.has(placeholder)) {
+    if (!unique.has(placeholder) && !isContactPlaceholder(placeholder)) {
       warnings.push(`Placeholder {{${placeholder}}} has no matching field.`);
     }
   });
@@ -870,7 +888,7 @@ function applyJson() {
     renderTemplateList();
     renderEditor();
     updateJsonPanel();
-    setStatus("JSON applied.");
+    setStatus("JSON applied. Click Save to persist your changes.");
   } catch (error) {
     console.error(error);
     setStatus(error.message || "Failed to apply JSON.", true);

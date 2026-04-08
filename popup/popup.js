@@ -168,9 +168,7 @@ function escapeRegExp(value) {
 }
 
 function toPlainText(html) {
-  const wrapper = document.createElement("div");
-  wrapper.innerHTML = html || "";
-  return wrapper.textContent || "";
+  return window.HTMLSanitize.htmlToPlainText(html);
 }
 
 function updatePreview() {
@@ -198,6 +196,8 @@ async function loadTemplates() {
   const tabId = await resolveComposeTabId();
   if (tabId == null) {
     setStatus("Open Mail Templates from the compose toolbar.");
+  } else {
+    setStatus("Templates loaded.");
   }
 }
 
