@@ -74,6 +74,12 @@ function createFieldInput(field) {
       option.textContent = optionValue;
       input.appendChild(option);
     });
+  } else if (field.type === "calculateSalary") {
+    input = document.createElement("input");
+    input.type = "text";
+    input.readOnly = true;
+    input.placeholder = field.placeholder || "";
+    input.tabIndex = -1;
   } else {
     input = document.createElement("input");
     input.type = "text";
@@ -120,9 +126,29 @@ function collectValues() {
   const values = {};
   const inputs = fieldsSection.querySelectorAll("[data-field-id]");
   inputs.forEach((input) => {
-    values[input.dataset.fieldId] = input.value || "";
+    const fieldId = input.dataset.fieldId;
+    const field = currentTemplate.fields.find((f) => f.id === fieldId);
+    if (field && field.type === "calculateSalary") {
+      return;
+    }
+    values[fieldId] = input.value || "";
   });
-  return values;
+  return window.SalaryField.mergeSalaryFieldsIntoValues(currentTemplate.fields, values);
+}
+
+function syncComputedSalaryDisplays(formValues) {
+  if (!currentTemplate || !Array.isArray(currentTemplate.fields)) {
+    return;
+  }
+  currentTemplate.fields.forEach((field) => {
+    if (field.type !== "calculateSalary" || !field.id) {
+      return;
+    }
+    const el = document.getElementById(`field-${field.id}`);
+    if (el) {
+      el.value = formValues[field.id] || "";
+    }
+  });
 }
 
 function applyValues(text, values) {
@@ -148,9 +174,11 @@ function updatePreview() {
   if (!currentTemplate) {
     return;
   }
-  const values = { ...contactValues, ...collectValues() };
+  const formValues = collectValues();
+  const values = { ...contactValues, ...formValues };
   subjectPreview.textContent = applyValues(currentTemplate.subject, values);
   bodyPreview.textContent = toPlainText(applyValues(currentTemplate.body, values));
+  syncComputedSalaryDisplays(formValues);
 }
 
 async function loadTemplates() {
@@ -171,9 +199,16 @@ async function loadTemplates() {
 }
 
 function validateRequiredFields() {
+  const values = collectValues();
   const inputs = fieldsSection.querySelectorAll("[data-field-id]");
   for (const input of inputs) {
-    if (input.required && !input.value.trim()) {
+    const fieldId = input.dataset.fieldId;
+    const field = currentTemplate.fields.find((f) => f.id === fieldId);
+    if (!field || !field.required) {
+      continue;
+    }
+    const raw = values[fieldId] ?? "";
+    if (!String(raw).trim()) {
       return input;
     }
   }
