@@ -22,12 +22,12 @@ if (!extensionId) {
   process.exit(1);
 }
 
-const xpiPath = join(root, "dist", "mail-templates.xpi");
+const xpiPath = join(root, "dist", "templator.xpi");
 const xpi = readFileSync(xpiPath);
 const hash = createHash("sha256").update(xpi).digest("hex");
 
 const tag = `v${version}`;
-const updateLink = `https://github.com/${repo}/releases/download/${tag}/mail-templates.xpi`;
+const updateLink = `https://github.com/${repo}/releases/download/${tag}/templator.xpi`;
 
 const payload = {
   addons: {

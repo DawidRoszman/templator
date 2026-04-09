@@ -923,7 +923,7 @@ function exportTemplatesToFile() {
   const anchor = document.createElement("a");
   const dateStamp = new Date().toISOString().slice(0, 10);
   anchor.href = url;
-  anchor.download = `mail-templates-${dateStamp}.json`;
+  anchor.download = `templator-${dateStamp}.json`;
   anchor.click();
   URL.revokeObjectURL(url);
   setStatus("Templates exported.");

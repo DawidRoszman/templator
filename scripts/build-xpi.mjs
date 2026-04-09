@@ -9,7 +9,7 @@ const root = join(__dirname, "..");
 const manifest = JSON.parse(readFileSync(join(root, "manifest.json"), "utf8"));
 const version = manifest.version;
 const distDir = join(root, "dist");
-const baseName = "mail-templates";
+const baseName = "templator";
 
 mkdirSync(distDir, { recursive: true });
 

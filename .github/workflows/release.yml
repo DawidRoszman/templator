@@ -42,7 +42,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            dist/mail-templates.xpi
-            dist/mail-templates-${{ steps.meta.outputs.version }}.xpi
+            dist/templator.xpi
+            dist/templator-${{ steps.meta.outputs.version }}.xpi
             dist/updates.json
           generate_release_notes: true
