@@ -1,7 +1,7 @@
 {
   "private": true,
   "scripts": {
-    "test": "node --test tests/salary-field.test.mjs tests/month-dynamic-options.test.mjs",
+    "test": "node --test tests/salary-field.test.mjs tests/month-dynamic-options.test.mjs tests/manifest.test.mjs tests/build-scripts.test.mjs tests/options-export.test.mjs tests/popup-status.test.mjs",
     "build": "node scripts/build-xpi.mjs"
   }
 }
