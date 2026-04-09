@@ -1,11 +1,11 @@
 {
   "manifest_version": 2,
-  "name": "Mail Templates",
+  "name": "Templator",
   "version": "0.1.0",
   "description": "Create and apply mail templates with input fields.",
   "browser_specific_settings": {
     "gecko": {
-      "id": "mail-templates@local",
+      "id": "templator@local",
       "strict_min_version": "115.0"
     }
   },
@@ -14,7 +14,7 @@
     "scripts": ["shared/default-templates.js", "background.js"]
   },
   "compose_action": {
-    "default_title": "Mail Templates"
+    "default_title": "Templator"
   },
   "options_ui": {
     "page": "options/options.html",

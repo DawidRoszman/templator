@@ -1,11 +1,11 @@
-# Mail Templates (Thunderbird)
+# Templator (Thunderbird)
 
 ## Load in Thunderbird
 
 ### Install a release (recommended)
 1. Open the GitHub **Releases** page for this repository.
-2. Download `mail-templates.xpi` from the latest release (or use the stable URL  
-   `https://github.com/OWNER/REPO/releases/latest/download/mail-templates.xpi` after you replace `OWNER` and `REPO`).
+2. Download `templator.xpi` from the latest release (or use the stable URL  
+   `https://github.com/OWNER/REPO/releases/latest/download/templator.xpi` after you replace `OWNER` and `REPO`).
 3. In Thunderbird: `Tools` > `Add-ons and Themes` > gear icon > **Install Add-on From File…** and choose the `.xpi` file.
 
 ### Temporary load (development only)
@@ -23,9 +23,9 @@
    git tag v0.2.0
    git push origin v0.2.0
    ```
-4. GitHub Actions builds the XPI, checks that the tag matches `manifest.json`, writes `updates.json`, and creates a **Release** with `mail-templates.xpi`, a versioned copy, and `updates.json` attached.
+4. GitHub Actions builds the XPI, checks that the tag matches `manifest.json`, writes `updates.json`, and creates a **Release** with `templator.xpi`, a versioned copy, and `updates.json` attached.
 
-Local build: `npm run build` produces `dist/mail-templates.xpi` and `dist/mail-templates-<version>.xpi`.
+Local build: `npm run build` produces `dist/templator.xpi` and `dist/templator-<version>.xpi`.
 
 ### Optional: automatic updates for users
 
@@ -43,7 +43,7 @@ For a wider audience, publishing signed builds on [Thunderbird Add-ons](https://
 
 ## Use
 1. Open a new compose window.
-2. Click the `Mail Templates` button in the compose toolbar.
+2. Click the `Templator` button in the compose toolbar.
 3. Pick a template, fill the fields, and click `Apply to compose`.
 
 ## Customize templates

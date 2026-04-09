@@ -195,7 +195,7 @@ async function loadTemplates() {
   await loadContactValues();
   const tabId = await resolveComposeTabId();
   if (tabId == null) {
-    setStatus("Open Mail Templates from the compose toolbar.");
+    setStatus("Open Templator from the compose toolbar.");
   } else {
     setStatus("Templates loaded.");
   }
